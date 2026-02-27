@@ -5,7 +5,7 @@ Emits deltas to MQTT for the state updater.
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, UTC
 from collections import defaultdict
 import paho.mqtt.client as mqtt
 
@@ -30,7 +30,7 @@ def emit_hospital_delta(facility_id, delta):
     output = {
         "facility_id": facility_id,
         "delta": delta,
-        "timestamp": datetime.utcnow().isoformat() + "Z"
+        "timestamp": datetime.now(UTC).isoformat() + "Z"
     }
     print(f"\n{'='*60}")
     print(f"HOSPITAL DELTA: {facility_id}")

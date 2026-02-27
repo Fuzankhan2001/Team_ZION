@@ -10,7 +10,8 @@ DB_PARAMS = {
 }
 
 # LLM Configuration
-LLM_MODEL = "gemini-1.5-flash"
+LLM_MODEL = "gemini-2.5-flash"
+LLM_API_VERSION = "v1"
 LLM_TIMEOUT = 10
 
 CHECK_INTERVAL_SECONDS = 15

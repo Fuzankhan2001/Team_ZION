@@ -3,23 +3,34 @@ Monitoring Agent
 Polls database, detects risks, and generates LLM explanations.
 """
 
+import os
 import psycopg
 import time
 import json
 import traceback
-from datetime import datetime
+from datetime import datetime, UTC
+from pathlib import Path
+from dotenv import load_dotenv
 from google import genai
 from config import (
     DB_PARAMS, 
     CHECK_INTERVAL_SECONDS, 
     LLM_MODEL, 
+    LLM_API_VERSION,
     LLM_TIMEOUT,
     BED_THRESHOLD,
     VENT_THRESHOLD,
     OXYGEN_CRITICAL
 )
 
-client = genai.Client()
+# Load .env from project root (one level up from ai_agents/)
+load_dotenv(Path(__file__).parent.parent / ".env")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+client = genai.Client(api_key=GOOGLE_API_KEY, http_options={"api_version": LLM_API_VERSION})
+
+# Cache: only call LLM when a hospital's risks actually change
+last_known_risks: dict = {}
+
 
 def get_db_connection():
     try:
@@ -135,21 +146,37 @@ def run_monitoring_agent():
                 continue
 
             for hospital in hospitals:
+                fid = hospital["facility_id"]
                 risks = detect_risks(hospital)
                 if risks:
-                    explanation = generate_explanation(hospital, risks)
+                    risks_key = tuple(sorted(risks))
+                    risks_changed = last_known_risks.get(fid) != risks_key
+
+                    if risks_changed:
+                        explanation = generate_explanation(hospital, risks)
+                        last_known_risks[fid] = risks_key
+                    else:
+                        # Risks unchanged — reuse last explanation, skip LLM call
+                        explanation = (
+                            f"Hospital {fid} continues to experience: {', '.join(risks)}. "
+                            f"No change since last alert."
+                        )
+
                     alert = {
                         "alert_type": "HOSPITAL_RISK",
-                        "facility_id": hospital["facility_id"],
+                        "facility_id": fid,
                         "risks": risks,
-                        "generated_at": datetime.utcnow().isoformat() + "Z",
+                        "generated_at": datetime.now(UTC).isoformat() + "Z",
                         "explanation": explanation
                     }
                     print("\n" + "=" * 60)
-                    print("ALERT GENERATED")
+                    print("ALERT GENERATED" + (" [NEW]" if risks_changed else " [ONGOING]"))
                     print("=" * 60)
                     print(json.dumps(alert, indent=2))
                     print("=" * 60 + "\n")
+                else:
+                    # Risks cleared — reset cache so next occurrence triggers LLM again
+                    last_known_risks.pop(fid, None)
 
         except KeyboardInterrupt:
             print("\nMonitoring agent stopped by user")

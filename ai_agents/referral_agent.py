@@ -3,15 +3,19 @@ Referral Agent
 Full hospital scoring with haversine distance + AI explanation.
 """
 
+import os
 import psycopg
 import math
 import json
 import traceback
-from datetime import datetime
+from datetime import datetime, UTC
+from pathlib import Path
+from dotenv import load_dotenv
 from google import genai
 from config import (
     DB_PARAMS, 
-    LLM_MODEL, 
+    LLM_MODEL,
+    LLM_API_VERSION,
     LLM_TIMEOUT,
     BED_THRESHOLD,
     VENT_THRESHOLD,
@@ -24,7 +28,11 @@ from config import (
     LOW_OXYGEN_PENALTY
 )
 
-client = genai.Client()
+# Load .env from project root (one level up from ai_agents/)
+load_dotenv(Path(__file__).parent.parent / ".env")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+client = genai.Client(api_key=GOOGLE_API_KEY, http_options={"api_version": LLM_API_VERSION})
+
 
 
 def get_db_connection():
@@ -151,7 +159,7 @@ def handle_referral(request):
     hospitals = fetch_hospitals()
 
     if not hospitals:
-        return {"error": "No hospitals available or database connection failed", "generated_at": datetime.utcnow().isoformat() + "Z"}
+        return {"error": "No hospitals available or database connection failed", "generated_at": datetime.now(UTC).isoformat() + "Z"}
 
     ranked = []
     for h in hospitals:
@@ -172,8 +180,8 @@ def handle_referral(request):
     explanation = generate_explanation(request, top_3)
 
     return {
-        "request_id": f"REF_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
-        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "request_id": f"REF_{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}",
+        "generated_at": datetime.now(UTC).isoformat() + "Z",
         "recommendations": top_3,
         "all_hospitals_count": len(ranked),
         "explanation": explanation
