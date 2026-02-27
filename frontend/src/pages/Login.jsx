@@ -24,15 +24,8 @@ export default function Login() {
             localStorage.setItem('role', res.data.role);
             localStorage.setItem('facility_id', res.data.facility_id);
 
-            // Route based on role
-            const role = res.data.role;
-            if (role === 'hospital' || role === 'admin') {
-                navigate('/hospital');
-            } else if (role === 'ambulance') {
-                navigate('/ambulance');
-            } else {
-                navigate('/');
-            }
+            // Always go to main page after login; Welcome handles role navigation
+            navigate('/');
         } catch (err) {
             setError(err.response?.data?.detail || 'Login failed. Please try again.');
         } finally {
