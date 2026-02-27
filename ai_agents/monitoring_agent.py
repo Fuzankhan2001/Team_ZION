@@ -4,7 +4,7 @@ Polls database, detects risks.
 LLM explanation is a stub — will be wired in Phase 3.
 """
 
-import psycopg2
+import psycopg
 import time
 import json
 from datetime import datetime
@@ -14,7 +14,7 @@ from config import DB_PARAMS, CHECK_INTERVAL_SECONDS
 
 def get_db_connection():
     try:
-        return psycopg2.connect(**DB_PARAMS)
+        return psycopg.connect(**DB_PARAMS)
     except Exception as e:
         print(f"Database connection failed: {e}")
         return None

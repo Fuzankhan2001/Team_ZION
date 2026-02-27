@@ -4,7 +4,7 @@ Listens to raw MQTT sensor data and updates PostgreSQL.
 """
 
 import json
-import psycopg2
+import psycopg
 import paho.mqtt.client as mqtt
 from config import BROKER, DB_PARAMS
 
@@ -14,7 +14,7 @@ TOPIC = "hospital/+/+/raw"
 
 def get_db_connection():
     try:
-        conn = psycopg2.connect(**DB_PARAMS)
+        conn = psycopg.connect(**DB_PARAMS)
         return conn
     except Exception as e:
         print(f"Connection failed: {e}")
