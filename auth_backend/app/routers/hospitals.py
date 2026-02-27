@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from app.database import execute_query
-from app.services.auth_dependency import get_current_user
 
 router = APIRouter()
 
 
 @router.get("/dashboard")
-def get_dashboard(current_user: dict = Depends(get_current_user)):
+def get_dashboard():
     """Get live dashboard data for all hospitals."""
     query = """
         SELECT 
@@ -23,7 +22,7 @@ def get_dashboard(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/state/{facility_id}")
-def get_hospital_state(facility_id: str, current_user: dict = Depends(get_current_user)):
+def get_hospital_state(facility_id: str):
     """Get state of a specific hospital."""
     query = """
         SELECT 
@@ -39,3 +38,29 @@ def get_hospital_state(facility_id: str, current_user: dict = Depends(get_curren
     """
     result = execute_query(query, (facility_id,), fetch_one=True)
     return result or {}
+
+
+@router.get("/history/{facility_id}")
+def get_hospital_history(facility_id: str):
+    """Get resource history for graphs."""
+    query = """
+        SELECT beds_occupied, oxygen_percent, recorded_at
+        FROM hospital_history
+        WHERE facility_id = %s
+        ORDER BY recorded_at DESC
+        LIMIT 50
+    """
+    result = execute_query(query, (facility_id,))
+    return result or []
+
+
+@router.get("/admissions/{facility_id}")
+def get_incoming_admissions(facility_id: str):
+    """Get incoming admissions for a hospital."""
+    query = """
+        SELECT * FROM incoming_admissions
+        WHERE hospital_id = %s AND status = 'EN_ROUTE'
+        ORDER BY created_at DESC
+    """
+    result = execute_query(query, (facility_id,))
+    return result or []
