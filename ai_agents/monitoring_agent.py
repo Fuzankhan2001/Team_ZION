@@ -1,16 +1,25 @@
 """
 Monitoring Agent
-Polls database, detects risks.
-LLM explanation is a stub — will be wired in Phase 3.
+Polls database, detects risks, and generates LLM explanations.
 """
 
 import psycopg
 import time
 import json
+import traceback
 from datetime import datetime
-from config import DB_PARAMS, CHECK_INTERVAL_SECONDS
+import g4f
+from config import (
+    DB_PARAMS, 
+    CHECK_INTERVAL_SECONDS, 
+    LLM_MODEL, 
+    LLM_TIMEOUT,
+    BED_THRESHOLD,
+    VENT_THRESHOLD,
+    OXYGEN_CRITICAL
+)
 
-
+llm_client = g4f.Client()
 
 def get_db_connection():
     try:
@@ -38,6 +47,7 @@ def fetch_hospital_state():
                 s.oxygen_status
             FROM hospital_state s
             JOIN hospital_capacity c ON s.facility_id = c.facility_id
+            WHERE c.beds_total > 0 AND c.ventilators_total > 0
         """)
 
         columns = [desc[0] for desc in cursor.description]
@@ -53,36 +63,75 @@ def fetch_hospital_state():
 
 def detect_risks(hospital):
     risks = []
-    bed_ratio = hospital["beds_occupied"] / float(hospital["beds_total"])
-    vent_ratio = hospital["ventilators_in_use"] / float(hospital["ventilators_total"])
+    try:
+        if hospital["beds_total"] == 0 or hospital["ventilators_total"] == 0:
+            return risks
 
-    if bed_ratio >= 0.8:
-        risks.append("HIGH_BED_UTILIZATION")
-    if vent_ratio >= 0.8:
-        risks.append("VENTILATOR_STRESS")
-    if hospital["oxygen_percent"] <= 30:
-        risks.append("OXYGEN_CRITICAL")
+        bed_ratio = hospital["beds_occupied"] / float(hospital["beds_total"])
+        vent_ratio = hospital["ventilators_in_use"] / float(hospital["ventilators_total"])
+
+        if bed_ratio >= BED_THRESHOLD:
+            risks.append("HIGH_BED_UTILIZATION")
+        if vent_ratio >= VENT_THRESHOLD:
+            risks.append("VENTILATOR_STRESS")
+        if hospital["oxygen_percent"] <= OXYGEN_CRITICAL:
+            risks.append("OXYGEN_CRITICAL")
+
+    except Exception as e:
+        print(f"Risk detection error for {hospital.get('facility_id', 'UNKNOWN')}: {e}")
 
     return risks
 
 
 def generate_explanation(hospital, risks):
-    """Stub — will use LLM in Phase 3"""
-    return (
-        f"Hospital {hospital['facility_id']} has: {', '.join(risks)}. "
-        f"Resource utilization is approaching critical thresholds."
-    )
+    """Generate LLM-powered explanation with fallback."""
+    try:
+        prompt = f"""
+You are a hospital operations monitoring assistant.
+
+Hospital ID: {hospital['facility_id']}
+
+Current State:
+- Beds occupied: {hospital['beds_occupied']} / {hospital['beds_total']}
+- Ventilators in use: {hospital['ventilators_in_use']} / {hospital['ventilators_total']}
+- Oxygen level: {hospital['oxygen_percent']}%
+- Oxygen status: {hospital['oxygen_status']}
+
+Detected Risks: {', '.join(risks)}
+
+Explain:
+- Why this situation is risky
+- What hospital administrators should be aware of
+- Keep explanation factual and non-medical
+- Be concise (2-3 sentences)
+"""
+
+        response = llm_client.chat.completions.create(
+            model=LLM_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            timeout=LLM_TIMEOUT
+        )
+        return response.choices[0].message.content
+
+    except Exception as e:
+        print(f"LLM call failed, using fallback: {e}")
+        return (
+            f"Hospital {hospital['facility_id']} is experiencing: "
+            f"{', '.join(risks)}. "
+            f"Resource utilization is approaching critical thresholds. "
+            f"Administrators should monitor availability and prepare mitigation actions."
+        )
 
 
 def run_monitoring_agent():
-    print("Monitoring Agent started")
+    print("Monitoring Agent started (READ-ONLY)")
     print(f"  Checking every {CHECK_INTERVAL_SECONDS} seconds\n")
 
     while True:
         try:
             hospitals = fetch_hospital_state()
             if not hospitals:
-                print("No hospital data available")
+                print("No hospital data available or database connection failed")
                 time.sleep(CHECK_INTERVAL_SECONDS)
                 continue
 
@@ -101,12 +150,14 @@ def run_monitoring_agent():
                     print("ALERT GENERATED")
                     print("=" * 60)
                     print(json.dumps(alert, indent=2))
+                    print("=" * 60 + "\n")
 
         except KeyboardInterrupt:
-            print("\nMonitoring agent stopped")
+            print("\nMonitoring agent stopped by user")
             break
         except Exception as e:
             print(f"Error in monitoring loop: {e}")
+            traceback.print_exc()
 
         time.sleep(CHECK_INTERVAL_SECONDS)
 
