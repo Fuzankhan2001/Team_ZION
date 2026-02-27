@@ -1,6 +1,6 @@
 -- ===============================
--- Seed Data — Phase 2
--- Expanded to 4 hospitals + roles
+-- Seed Data — Phase 3
+-- Added ambulance user
 -- ===============================
 
 INSERT INTO public.hospitals (facility_id, name, city, latitude, longitude)
@@ -27,10 +27,10 @@ VALUES
     ('H004', 0, 0, 100.0, 'NORMAL')
 ON CONFLICT (facility_id) DO NOTHING;
 
--- password: admin123
 INSERT INTO public.users (username, password_hash, role, facility_id)
 VALUES
     ('admin', '$2b$12$LJ3m4ys3Lk0TSwHjmO0pFeEBkVwI/x.Ue4RJc8bSsHnIvqOqBN456', 'admin', 'H001'),
     ('hospital1', '$2b$12$LJ3m4ys3Lk0TSwHjmO0pFeEBkVwI/x.Ue4RJc8bSsHnIvqOqBN456', 'hospital', 'H001'),
-    ('hospital2', '$2b$12$LJ3m4ys3Lk0TSwHjmO0pFeEBkVwI/x.Ue4RJc8bSsHnIvqOqBN456', 'hospital', 'H002')
+    ('hospital2', '$2b$12$LJ3m4ys3Lk0TSwHjmO0pFeEBkVwI/x.Ue4RJc8bSsHnIvqOqBN456', 'hospital', 'H002'),
+    ('ambulance1', '$2b$12$LJ3m4ys3Lk0TSwHjmO0pFeEBkVwI/x.Ue4RJc8bSsHnIvqOqBN456', 'ambulance', NULL)
 ON CONFLICT (username) DO NOTHING;
