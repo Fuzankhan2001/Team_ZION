@@ -1,10 +1,10 @@
--- Migration 001: Add capacity table
--- Phase 2: Simulated migration file
+-- Migration 002: Add network tables
+-- Phase 3: network messages + referral log tables
 
-ALTER TABLE public.hospital_capacity
-    DROP CONSTRAINT IF EXISTS fk_capacity_hospital;
+ALTER TABLE public.hospital_state
+    DROP CONSTRAINT IF EXISTS fk_state_hospital;
 
-ALTER TABLE public.hospital_capacity
-    ADD CONSTRAINT fk_capacity_hospital
+ALTER TABLE public.hospital_state
+    ADD CONSTRAINT fk_state_hospital
     FOREIGN KEY (facility_id)
     REFERENCES public.hospitals (facility_id);
