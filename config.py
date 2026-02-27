@@ -1,6 +1,6 @@
 # ============================================
 # IoT Simulator Configuration
-# Phase 2: Per-hospital configs
+# Phase 3: Added simulation speed
 # ============================================
 
 BROKER = "localhost"
@@ -14,3 +14,6 @@ HOSPITAL_CONFIGS = {
     "H003": {"beds": 10, "ventilators": 10, "oxygen_cylinders": 4},
     "H004": {"beds": 10, "ventilators": 10, "oxygen_cylinders": 4},
 }
+
+# Speed multiplier — higher = faster simulation
+SIMULATION_SPEED_FACTOR = 1.0

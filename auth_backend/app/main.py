@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, hospitals
+from app.routers import auth, hospitals, referral
 
 app = FastAPI(title="Hospital Backend API")
 
@@ -14,6 +14,7 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(hospitals.router, prefix="/api/hospital", tags=["Hospital Dashboard"])
+app.include_router(referral.router, prefix="/api/referral", tags=["Ambulance Referral"])
 
 
 @app.get("/")
