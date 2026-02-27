@@ -8,7 +8,7 @@ import math
 import json
 import traceback
 from datetime import datetime
-import g4f
+from google import genai
 from config import (
     DB_PARAMS, 
     LLM_MODEL, 
@@ -24,7 +24,7 @@ from config import (
     LOW_OXYGEN_PENALTY
 )
 
-llm_client = g4f.Client()
+client = genai.Client()
 
 
 def get_db_connection():
@@ -130,12 +130,11 @@ Explain in 3-4 sentences:
 - Any concerns about alternatives
 - Be concise and factual.
 """
-        response = llm_client.chat.completions.create(
+        response = client.models.generate_content(
             model=LLM_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            timeout=LLM_TIMEOUT
+            contents=prompt,
         )
-        return response.choices[0].message.content
+        return response.text
     except Exception as e:
         print(f"LLM explanation failed: {e}")
         top = ranked_hospitals[0]

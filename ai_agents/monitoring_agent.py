@@ -8,7 +8,7 @@ import time
 import json
 import traceback
 from datetime import datetime
-import g4f
+from google import genai
 from config import (
     DB_PARAMS, 
     CHECK_INTERVAL_SECONDS, 
@@ -19,7 +19,7 @@ from config import (
     OXYGEN_CRITICAL
 )
 
-llm_client = g4f.Client()
+client = genai.Client()
 
 def get_db_connection():
     try:
@@ -106,12 +106,11 @@ Explain:
 - Be concise (2-3 sentences)
 """
 
-        response = llm_client.chat.completions.create(
+        response = client.models.generate_content(
             model=LLM_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            timeout=LLM_TIMEOUT
+            contents=prompt,
         )
-        return response.choices[0].message.content
+        return response.text
 
     except Exception as e:
         print(f"LLM call failed, using fallback: {e}")
