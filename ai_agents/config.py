@@ -8,3 +8,5 @@ DB_PARAMS = {
     "host": "localhost",
     "port": 5432
 }
+
+CHECK_INTERVAL_SECONDS = 15
