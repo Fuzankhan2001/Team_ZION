@@ -1,1 +1,10 @@
+-- Migration 001: Add capacity table
+-- Phase 2: Simulated migration file
 
+ALTER TABLE public.hospital_capacity
+    DROP CONSTRAINT IF EXISTS fk_capacity_hospital;
+
+ALTER TABLE public.hospital_capacity
+    ADD CONSTRAINT fk_capacity_hospital
+    FOREIGN KEY (facility_id)
+    REFERENCES public.hospitals (facility_id);
