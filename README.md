@@ -1,15 +1,10 @@
-# IoT Simulators
+# Database
 
-MQTT-based hospital IoT sensor simulators and preprocessors.
-
-## Components (planned)
-- `bed_simulator.py` — Pressure sensors on beds
-- `ventilator_simulator.py` — Current draw from ventilators
-- `oxygen_simulator.py` — Oxygen cylinder pressure
-- Preprocessors for each sensor type
+PostgreSQL schema and seed data for AIRA-Med.
 
 ## Setup
 ```bash
-pip install -r requirements.txt
-python bed_simulator.py
+createdb hospitaldb
+psql -U postgres -d hospitaldb -f schema.sql
+psql -U postgres -d hospitaldb -f seed.sql
 ```
